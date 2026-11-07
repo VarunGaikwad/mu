@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createPlanRevision } from "../src/core/mu/plan-revision.ts";
 import { loadSessionPlan, savePlanToSession } from "../src/core/mu/plan-session.ts";
 import { PlanStore } from "../src/core/mu/plan-store.ts";
-import { setMuPlan } from "../src/core/mu/session-state.ts";
+import { addMuTodo, readMuSessionState, setMuPlan } from "../src/core/mu/session-state.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
 
 const roots: string[] = [];
@@ -16,7 +16,12 @@ async function fixture() {
 	const directory = join(root, "store");
 	await mkdir(workspace);
 	await mkdir(directory);
-	return { directory, store: await PlanStore.open(directory, workspace), session: SessionManager.inMemory() };
+	return {
+		directory,
+		workspace,
+		store: await PlanStore.open(directory, workspace),
+		session: SessionManager.inMemory(),
+	};
 }
 afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
@@ -37,6 +42,23 @@ describe("μ plan/session integration", () => {
 			...session.getEntries(),
 		]);
 		expect(await loadSessionPlan(resumed, store)).toEqual(first);
+	});
+
+	it("restores a persisted branch with its selected plan and todos", async () => {
+		const { workspace, store } = await fixture();
+		const session = SessionManager.create(workspace, workspace);
+		session.appendMessage({ role: "user", content: "start", timestamp: 1 });
+		const first = createPlanRevision({ title: "first" });
+		const second = createPlanRevision({ title: "second" });
+		const firstEntry = await savePlanToSession(session, store, first);
+		await savePlanToSession(session, store, second);
+		session.branch(firstEntry);
+		addMuTodo(session, "todo", "Check persisted plan");
+		const reopened = SessionManager.open(session.getSessionFile()!, workspace);
+		expect(await loadSessionPlan(reopened, store)).toEqual(first);
+		expect(readMuSessionState(reopened).todos).toEqual([
+			{ id: "todo", label: "Check persisted plan", status: "pending" },
+		]);
 	});
 
 	it("rejects missing and corrupted selected revisions", async () => {
