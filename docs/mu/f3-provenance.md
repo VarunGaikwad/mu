@@ -14,7 +14,7 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 | Platform and mode | Evidence | Decision for μ privileged approval |
 | --- | --- | --- |
 | Linux interactive / TTY | Source inspection and isolated prototype only; real same-user child and terminal injection tests not yet run | BLOCKED |
-| Linux RPC / headless | Source inspection, mocked RPC dispatch and an isolated Node-host procfs probe; real Pi channel forgery and handle-isolation tests not yet run | BLOCKED |
+| Linux RPC / headless | Isolated real Pi RPC synthetic-dialog test shows forgery when the writer and request ID are deliberately delegated; actual worker reachability and handle isolation remain untested | BLOCKED |
 | Native Windows interactive / RPC | Not tested | BLOCKED |
 | Native macOS interactive / RPC | Not tested | BLOCKED |
 | WSL2 interactive / RPC | Not tested | BLOCKED |
@@ -26,6 +26,10 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 ## Local shared-channel counterexample
 
 `packages/coding-agent/test/mu-f3-rpc-feasibility.test.ts` starts a same-user Node child with an intentionally delegated private test pipe. The child emits two identical responses bearing a public fixture ID; a toy ID-only receiver accepts the first and rejects the replay. This demonstrates that replay protection alone cannot authenticate the writer when the writer handle is shared. It does **not** establish that a Pi child actually inherits or can reach the real RPC channel; the test never touches a real approval, terminal or RPC session. The ID is synthetic and not a secret.
+
+## Isolated real Pi RPC counterexample
+
+`packages/coding-agent/test/mu-f3-real-rpc.test.ts` starts the locally built Pi RPC CLI with an empty temporary home/config, offline mode, no session, no project context and a synthetic test extension. The test deliberately delegates the RPC stdin writer and gives a same-user child the synthetic dialog request ID over a private pipe. The child sends an unknown ID, the valid response, and their replay; the real Pi extension dialog reports one confirmation. The test does not authorize or perform a privileged operation, and does not demonstrate that a normal worker can reach the writer or learn the ID. It demonstrates that real extension-dialog correlation alone cannot authenticate a writer that already has both. The request ID is not logged, put in argv/environment, or persisted by the fixture.
 
 ## Linux procfs probe
 
