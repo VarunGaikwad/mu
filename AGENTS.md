@@ -1,146 +1,104 @@
-# Development Rules
+# AGENTS.md — μ Coding Agent Repository Instructions
 
-## Conversational Style
+These instructions apply to agents working anywhere in this repository. **μ** is the product name (Greek lowercase mu, U+03BC); use ASCII **`mu`** for CLI commands, source identifiers, branches, and paths. μ is developed as a maintained fork of Pi.
 
-- Keep answers short and concise
-- No emojis in commits, issues, PR comments, or code
-- No fluff or cheerful filler text (e.g., "Thanks @user" not "Thanks so much @user!")
-- Technical prose only, be direct
-- Use concise, clear, simple language. Define unavoidable jargon before using it.
-- Explain non-trivial designs and problems as: problem, concrete example or short trace, then solution. State why the solution is necessary and distinguish it from optional complexity.
-- Prefer concrete behavior and small illustrations over abstract summaries, dense terminology, or unexplained lists of changes.
-- When the user asks a question, answer it first before making edits or running implementation commands.
-- When responding to user feedback or an analysis, explicitly say whether you agree or disagree before saying what you changed.
+## 1. Start here: planning and implementation documents
 
-## Code Quality
+The repository uses **two different documentation directories**. Do not confuse them:
 
-- Read files in full before wide-ranging changes, before editing files you have not fully inspected, and when asked to investigate or audit. Do not rely on search snippets for broad changes.
-- No `any` unless absolutely necessary.
-- No runtime checks of values whose types TypeScript already guarantees (no `typeof`/`instanceof`/`Array.isArray`/shape guards on typed parameters, typed callback results or typed declarations). Validate only at decided trust boundaries (wire input, schema-checked arguments and params).
-- Inline single-line helpers that have only one call site.
-- Check node_modules for external API types; don't guess.
-- **No inline imports** (`await import()`, `import("pkg").Type`, dynamic type imports). Top-level imports only.
-- In `packages/coding-agent`, resolve package assets through helpers in `src/config.ts`. Do not use `__dirname` directly; the helpers account for source checkouts, npm installations, and standalone binaries.
-- Never remove or downgrade code to fix type errors from outdated deps; upgrade the dep instead.
-- Use only erasable TypeScript syntax (Node strip-only mode) in code checked by the root config (`packages/*/src`, `packages/*/test`, `packages/coding-agent/examples`): no parameter properties, `enum`, `namespace`/`module`, `import =`, `export =`, or other constructs needing JS emit. Use explicit fields with constructor assignments.
-- Always ask before removing functionality or code that appears intentional.
-- Do not preserve backward compatibility unless the user asks for it.
-- Never hardcode key checks (e.g. `matchesKey(keyData, "ctrl+x")`). Add defaults to `DEFAULT_EDITOR_KEYBINDINGS` or `DEFAULT_APP_KEYBINDINGS` so they stay configurable.
-- Never modify `packages/ai/src/models.generated.ts` directly; update the catalog definitions in `packages/ai/catalog/` instead (see its README), then regenerate. Including the resulting `models.generated.ts` diff is always OK, even if regeneration includes unrelated upstream model metadata changes. The generated model data in `packages/ai/src/providers/data/` is gitignored: never stage it, and don't look for it in git history.
+```text
+docs/
+├── plan/
+│   └── mu-implementation-plan.md
+└── implementation/
+    └── mu-implementation.md
+```
 
-## Chord v2 Code Style
+- **`docs/plan/` is the authoritative location for approved implementation plans.** Read `docs/plan/mu-implementation-plan.md` before proposing, implementing, testing, or declaring any μ milestone complete. If more files are added to `docs/plan/`, inspect the relevant ones too.
+- **`docs/implementation/` records actual implementation progress and evidence.** Read `docs/implementation/mu-implementation.md` to find what was attempted, implemented, tested, blocked, or accepted. Update it after your authorized work with factual results, not predictions.
+- **Plans describe intended work; implementation logs describe observed work.** A task marked complete in prose is *not* proof the code or its tests exist. Verify both against the current checkout.
+- Do not treat old summaries, archived checkpoints, prior conversations, or an agent's assertion as evidence of current implementation. The project restarted from scratch; the historical μ code and earlier M02/M05 completion reports are not valid acceptance evidence.
+- Follow the *latest explicitly approved* plan revision. Do not silently change milestone scope, reorder dependency gates, widen `allowed_paths`, or edit a plan to make incomplete work appear complete. If the plan conflicts with the current source, document the discrepancy and request a decision before changing the contract.
+- Keep `docs/plan/` intact. Do not delete, move, overwrite, or regenerate plan documents casually. Propose a revision and record why; material plan/scope changes require the user's approval. Execution authority never comes from a Markdown file.
 
-Binding for Chord v2 (`packages/chord/src/`) and its tests, when writing and when reviewing. The model is pi-durable's source.
+### Document workflow for every task
 
-- Files: one concept per file, named after it; no one-helper files, no grab-bag files. First line: a comment saying what the file is for. Order: imports, exported types, then the public entry point first and its helpers below it in the order they are used; constants right above their first user. A blank line between top-level declarations. Split files by concept, never by size: one concept may take a long file (up to about 1,000 lines is fine); a second concept in a file is the reason to split.
-- Functions: every export has a one-line doc comment saying what it does or guarantees. Inline comments explain a non-obvious why (cost, race, decided rule), never what the next line does. Short functions with one job (about 40 lines needs a reason; one `switch` over a tagged union is fine). No boolean flag parameters that switch behaviour: two functions or a tagged value. Never write the same lines twice. Context last: required args, then `context`/`ctx` (always required, as in Durable; optional only on error-reporting paths), then optional args.
-- Types and checks: tagged unions for every state and result. Casts only where TypeScript cannot express a decided invariant, each with a short why. Every remaining runtime check names the trust boundary it serves (wire input, schema-checked params and arguments, declaration policy the types cannot express). Same-host values are plain data, immutable by convention: never copied, frozen or walked to enforce it; freeze only Chord-owned metadata when a decision says so. No defensive code against broken adapters, callers or our own modules.
-- Cost and memory: no hot-path work a decision did not ask for (walks, copies, compilations, per-call allocations). The function doing counted work counts it through its context; call sites never count for others. Caches are `WeakMap`s keyed by their owner, each with a GC test; no module-level strong caches.
-- Names and API: the design's vocabulary (`params`, `binding`, `principal key`), no invented synonyms; decided `ChordError` codes and reasons. Export only what a later layer or app needs. No dev or test modes, no unrequested options.
-- Tests: one test file per source file, one `describe` per mechanism, the layer spec's test list case by case; cost guards through the in-memory telemetry adapter; GC tests for every cache and binding. Every slice also adds one or more runnable examples in `packages/chord/test/examples/NN-topic.ts`, one topic each, numbered across slices, written as references for Chord's users (Durable's `test/examples/` format: header with what it shows and how to run it, commented steps, printed results).
-- Slices: Chord v2 is built in vertical slices (`packages/chord/docs/slices.md`). Implementers and reviewers read the slice spec, the feature map in `slices.md` and the whole of `packages/chord/docs/design.md` in full, and check the work against all three; slice specs cite design sections for orientation, not as a reading limit.
-- Deferred work: anything left to a later slice goes into the section "Carry-over" of `packages/chord/docs/slices.md` under that slice, in the same change; a slice's spec and build include every entry of its section.
-- Before reporting: re-read every changed file top to bottom as a stranger would; each file must be understandable without jumping around. Then `npm run check` and the layer's tests.
+1. Read this `AGENTS.md`, the relevant material in `docs/plan/`, and the existing record in `docs/implementation/`.
+2. Identify the **single requested milestone or bounded task**, its prerequisites, deliverables, permitted paths, security gates, and acceptance criteria.
+3. Inspect current source and tests; compare actual state against the plan. Report missing prerequisites rather than assuming they exist.
+4. Make only authorized, task-owned changes; add or update focused tests.
+5. Verify results, inspect the final diff, and append a factual milestone entry in `docs/implementation/mu-implementation.md` if documentation updates are in scope.
+6. Stop at the requested milestone's acceptance gate. Do not automatically start the next milestone, commit, push, or deploy.
 
-## Commands
+## 2. Git and branch policy
 
-- After code changes (not docs): `npm run check` (full output, no tail). Fix all errors, warnings, and infos before committing. Does not run tests.
-- `apps/p2` is outside the root check and the root tests. After p2 changes also run `cd apps/p2 && npm run check`; p2's suite is `cd apps/p2 && npm test` (TUI tests need Node 26, browser tests need `CHROMIUM_BIN`).
-- Run `npm run build` whenever something needs built output (`dist/`): tests or benchmarks that import built packages, Durable's workerd suite. The full suites of Chord and Durable need it: Chord's tests that start Node processes or bundle with esbuild load workspace packages from `dist/` (the rest run from source by its vitest config), and Durable imports pi-ai's `utils/*`, which have no source export. Never use it to type check or lint: that is `npm run check`, the preferred check.
-- Never run `npm test` unless requested by the user.
-- Never run the full vitest suite directly: it includes e2e tests that activate when endpoint/auth env vars are present. For all non-e2e tests, run `./test.sh` from the repo root. It runs `packages/*` only. Otherwise run specific tests from the package root:
-  - Vitest: `node "$(git rev-parse --show-toplevel)/node_modules/vitest/dist/cli.js" --run test/specific.test.ts`
-  - `packages/tui` (`node:test`): `node --test test/specific.test.ts`
-- If you create or modify a test file, run it and iterate on test or implementation until it passes.
-- For `packages/coding-agent/test/suite/`, use `test/suite/harness.ts` + the faux provider. No real provider APIs, keys, or paid tokens.
-- When regressions tests for fixing a github issue, add a comment with the github issue number next to the test.
-- For ad-hoc scripts, `write` them to a temp file (e.g. `/tmp`), run, edit if needed, remove when done. Don't embed multi-line scripts in `bash` commands.
-- Never commit unless the user asks.
+- **`main`** mirrors Pi upstream. Never add μ-specific feature commits here. Update it only through a reviewed, fast-forward-only upstream sync.
+- **`feat/mu`** is the μ development and integration branch. For a single authorized task, work here unless the user requests a separate task branch.
+- **`deployment`** contains only explicitly approved, tested μ releases; never promote automatically.
+- For substantial isolated work, use a user-authorized `feat/mu-<milestone>-<topic>` branch; upstream candidates use `sync/pi-<revision>` in an isolated worktree. Do not create branches/worktrees without authorization.
+- Before changing anything, inspect `git branch --show-current`, `git rev-parse HEAD`, `git status --short`, and relevant diffs. The plan's recorded baseline is historical, **not** a guarantee of the present HEAD.
+- Preserve pre-existing staged, unstaged, untracked, and user-owned changes. Never run destructive `git reset`, `git clean`, checkout/rebase/stash overwrites, force-push, branch deletion, or worktree cleanup to solve a conflict.
+- Do not **commit, push, fetch-and-integrate, merge, rebase, create/delete branches or worktrees, or deploy** unless the user explicitly authorizes that action. Permission to edit code does not imply permission to publish Git changes.
 
-## Dependency and Install Security
+## 3. Engineering and architecture rules
 
-- Treat npm dep and lockfile changes as reviewed code. Direct registry deps, including internal workspace deps, stay pinned to exact versions.
-- When updating `undici`, you MUST read its changelog/release notes for the target version and evaluate whether any changes may affect functionality before applying the update.
-- Hydrate/update locally with `npm install --ignore-scripts`; clean/CI-style with `npm ci --ignore-scripts`. Don't run lifecycle scripts unless the user asks.
-- If dep metadata changes, refresh `package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
-- If `packages/coding-agent/install-lock/` needs regen, run `node scripts/generate-coding-agent-install-lock.mjs` (verify with `--check` or `npm run check`). New deps with lifecycle scripts require review and an explicit allowlist entry in that script; never add one silently.
-- Pre-commit blocks lockfile commits unless `PI_ALLOW_LOCKFILE_CHANGE=1`. Don't bypass unless the user wants the lockfile change committed.
+- Prefer μ-owned modules and adapters and reuse Pi's existing APIs. Avoid broad edits to upstream-owned core files; document every necessary upstream modification.
+- Mandatory permission/approval checks belong at the **host/core execution or mutation boundary**. UI controls, extension hooks, model instructions, tool visibility, and project settings are not security boundaries.
+- Treat all model text, tool output, workspace files, child-agent messages, and fetched documentation as untrusted for authorization purposes. A plan file cannot grant permissions.
+- **Do not enable privileged approvals until genuine-user provenance (F3) is verified.** Authenticate privileged controls before extension command dispatch, reject stale/replayed responses, and deny unverified paths.
+- Modes: `read-only`, `workspace-write`, `danger-full-access`; approval policy: `on-request` or `never`. `never` means deny unapproved operations, **not** elevate. Full access is per-session, with fresh explicit user confirmation; no permanent blanket shell grant.
+- Arbitrary shell commands and Git worktrees are **not OS sandboxes**. Without independently verified containment, label command execution `UNSANDBOXED`, obtain authenticated user consent where available, or block. Do not promise workspace-only shell effects.
+- Direct file edits require validated scope, protected-path checks, fresh-read/stale-content validation at mutation time, and tests against symlink/hard-link/race escapes before claiming hard containment.
+- The planner proposes immutable, revision-hashed plans and structured task scopes. Approval is bound to the exact revision and cannot be carried across scope changes, resume, or branch transitions as authority.
+- A single writing agent may work in the normal workspace under actual policy. **Parallel writing agents require distinct managed Git worktrees, task ownership, safe integration, and separately verified security gates.** Until then, writers are sequential. Worktrees do not contain arbitrary shell processes.
+- Keep optional integrations and autonomy disabled until their prerequisites and native-platform acceptance gates pass. Do not replace a blocked secure capability with an implicit unsafe fallback.
 
-## Git
+## 4. Current starting assumption and execution order
 
-Multiple pi sessions may be running in this cwd at the same time, each modifying different files. Git operations that touch unstaged, staged, or untracked files outside your own changes will stomp on other sessions' work. Follow these rules:
+The project was explicitly restarted from scratch. **Do not claim that earlier μ modules, security features, 33 tools, or milestone tests still exist.** Confirm current files before implementing.
 
-Committing:
+Follow the dependency sequence in `docs/plan/mu-implementation-plan.md`. In broad terms:
 
-- Only commit files YOU changed in THIS session.
-- Stage explicit paths (`git add <path1> <path2>`); never `git add -A` / `git add .`.
-- Before committing, run `git status` and verify you are only staging your files.
-- `packages/ai/src/models.generated.ts` may always be included alongside your files.
-- Message format: `{feat,fix,docs}[(ai,tui,agent,coding-agent)]: <commit message> (optionally multiple lines)`. Message is informative and concise.
+1. Repository audit and documentation baseline (μ-00); independent F3 feasibility assessment.
+2. Immutable plan/todo/session/scope foundation (μ-02), plus independent nonprivileged models, planner, debug, safe-edit, UI, and tool-contract work as authorized.
+3. Authenticated host controls, mandatory enforcement, permission modes, and trusted checks **before** privileged execution.
+4. First product handover: **Plan → Review → Approve & Start Code**. Orchestrator handover remains disabled until its own gates pass.
+5. Checkpoints/undo, sequential builders, agent lifecycle, messages, worktree manager, DAG orchestration, then separately gated parallel writers.
+6. Deferred autonomy/integrations, native cross-platform acceptance, and explicit deployment promotion.
 
-Never run (destroys other agents' work or bypasses checks):
+Treat milestone numbers and checkboxes as a schedule, **not** permission to skip prerequisites. For a new request without an explicit milestone, propose the smallest next eligible slice; do not implement multiple milestones on speculation.
 
-- `git reset --hard`, `git checkout .`, `git clean -fd`, `git stash`, `git add -A`, `git add .`, `git commit --no-verify`.
+## 5. Testing, diffs, and evidence
 
-If rebase conflicts occur:
+- Discover actual build/test conventions from the current root `package.json`, scripts, package documentation, and existing tests **before** invoking them. Preserve any existing Pi `AGENTS.md` testing guidance if merging these instructions into an upstream file.
+- Run focused tests for every new/changed test and relevant code path. Prefer deterministic fixtures and faux providers; do not make paid provider calls by default.
+- Do not run the full `npm test` suite, perform installs, or trigger system-changing checks without separate authorization. `npm run check` may format or rewrite files; capture the diff beforehand and inspect every resulting change.
+- Run `npm run build` when required for the selected focused tests. Record exact commands, platform, result and limitations; don't claim that an unrun test passed.
+- Distinguish **implemented**, **verified locally**, **verified on native target OS**, **blocked**, and **accepted**. Mocks are not proof of Windows/macOS/Linux runtime behavior.
+- At completion, report files changed, relevant tests/results, pre-existing changes preserved, unresolved risks, and any user decision needed. Do not declare security or production readiness from passing a unit test alone.
 
-- Resolve conflicts only in files you modified.
-- If a conflict is in a file you did not modify, abort and ask the user.
-- Never force push.
+### Required implementation-log entry
 
-## Issues and PRs
+When a milestone has been worked on, update `docs/implementation/mu-implementation.md` with a concise record in this format (adapt headings to the existing document rather than duplicating them):
 
-See `CONTRIBUTING.md` for the contributor gate (auto-close workflows, `lgtm`/`lgtmi`, quality bar).
+```markdown
+### μ-XX — <milestone title>
+- Status: NOT STARTED | IN PROGRESS | IMPLEMENTED | VERIFIED-LOCAL | VERIFIED-NATIVE | BLOCKED | ACCEPTED
+- Branch / base commit:
+- Plan reference: docs/plan/mu-implementation-plan.md, relevant section
+- Scope and changed files:
+- Tests run (exact commands, environment, actual results):
+- Tests not run / platform gaps:
+- Security gates affected and their verified status:
+- Remaining blockers and next authorized step:
+- Commit / push / deployment: none unless separately authorized
+```
 
-When reviewing PRs:
+A status of **ACCEPTED** requires the user's acceptance *plus* the tests and platform/security evidence specified by the plan. If a documentation update was not authorized, report the evidence in your response rather than modifying files beyond the task scope.
 
-- Do not run `gh pr checkout`, `git switch`, or otherwise move the worktree to the PR branch unless the user explicitly asks.
-- Use `gh pr view`, `gh pr diff`, `gh api`, and local `git show`/`git diff` against fetched refs to inspect PR metadata, commits, and patches without changing branches.
-- If you need PR file contents, fetch/read them into temporary files or use `git show <ref>:<path>` without switching branches.
+## 6. Communication and stop conditions
 
-When creating issues:
-
-- Add `pkg:*` labels for affected packages (`pkg:agent`, `pkg:ai`, `pkg:coding-agent`, `pkg:tui`); use all that apply.
-
-When posting issue/PR comments:
-
-- Write the comment to a temp file and post with `gh issue/pr comment --body-file` (never multi-line markdown via `--body`).
-- Keep comments concise, technical, in the user's tone.
-- End every AI-posted comment with the AI-generated disclaimer line specified by the originating prompt (e.g. `This comment is AI-generated by `/wr``).
-
-When closing issues via commit:
-
-- Include `fixes #<number>` or `closes #<number>` in the message so merging auto-closes the issue. For multiple issues, repeat the keyword per issue (`closes #1, closes #2`); a shared keyword (`closes #1, #2`) only closes the first.
-
-## Building p2's web UI
-
-For building or changing p2's web UI (`apps/p2`), load and follow [.pi/skills/p2-ui.md](.pi/skills/p2-ui.md).
-
-## Testing pi Interactive Mode with tmux
-
-For testing pi's interactive mode, load and follow [.pi/skills/interactive-testing.md](.pi/skills/interactive-testing.md).
-
-## Changelog
-
-Location: `packages/*/CHANGELOG.md` (one per package).
-
-Sections under `## [Unreleased]`: `### Breaking Changes` (API changes requiring migration), `### Added`, `### Changed`, `### Fixed`, `### Removed`.
-
-Rules:
-
-- All new entries go under `## [Unreleased]`. Read the full section first and append to existing subsections; never duplicate them.
-- Released version sections (e.g. `## [0.12.2]`) are immutable; never modify them.
-- Do not create changelog entries when the work targets a branch other than `main`
-
-Attribution:
-
-- Internal (from issues): `Fixed foo bar ([#123](https://github.com/earendil-works/pi/issues/123))`
-- External contributions: `Added feature X ([#456](https://github.com/earendil-works/pi/pull/456) by [@username](https://github.com/username))`
-
-## Releasing
-
-For release preparation, publishing, verification, or recovery, load and follow [.pi/skills/release.md](.pi/skills/release.md).
-
-## User Override
-
-If the user's instructions conflict with any rule in this document, ask for explicit confirmation before overriding. Only then execute their instructions.
+- State assumptions and factual blockers precisely. Do not invent filenames, tool availability, test results, security guarantees, or a prior successful implementation.
+- If a task touches protected credentials, approval channels, executing arbitrary code, irreversible Git changes, or a scope not covered by the approved task, **stop that operation and request authorization**. Continue safe independent work only if it stays within the task scope.
+- On a failed or blocked verification, preserve code and evidence for review; never silently loosen the requirement, weaken tests, or mark the milestone done.
+- Finish with a short factual summary and the next *eligible* milestone; do not silently proceed into it.
