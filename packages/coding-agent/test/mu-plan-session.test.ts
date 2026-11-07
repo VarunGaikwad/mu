@@ -71,6 +71,31 @@ describe("μ plan/session integration", () => {
 		await expect(loadSessionPlan(session, store)).rejects.toThrow();
 	});
 
+	it("checks that the loaded revision matches the requested pointer", async () => {
+		const { session, store } = await fixture();
+		const first = createPlanRevision({ title: "first" });
+		const other = createPlanRevision({ title: "other" });
+		await savePlanToSession(session, store, first);
+		await expect(loadSessionPlan(session, { save: store.save.bind(store), load: async () => other })).rejects.toThrow(
+			"integrity",
+		);
+	});
+
+	it("rejects a plan load if the session branch changes while awaiting storage", async () => {
+		const { session, store } = await fixture();
+		const revision = createPlanRevision({ title: "test" });
+		await savePlanToSession(session, store, revision);
+		const changingStore = {
+			save: store.save.bind(store),
+			load: async (hash: string) => {
+				const value = await store.load(hash);
+				session.appendCustomEntry("other", {});
+				return value;
+			},
+		};
+		await expect(loadSessionPlan(session, changingStore)).rejects.toThrow("branch changed");
+	});
+
 	it("does not append a pointer when save fails or the branch changes", async () => {
 		const { session, store } = await fixture();
 		const revision = createPlanRevision({ title: "test" });
