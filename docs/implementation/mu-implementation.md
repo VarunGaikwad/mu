@@ -68,3 +68,14 @@ Before implementing anything:
 - Security gates: unchanged and unverified; session APIs and tool visibility do not establish authorization or containment.
 - Remaining blockers and next authorized step: user approved updating μ-00's no-publication criterion to permit authorized checkpoint pushes. μ-02 slice is outlined in `docs/mu/architecture.md`; its guarantees and tests do not yet exist. No privileged feature is enabled.
 - Commit / push / deployment: baseline audit checkpoint authorized for commit and push; no deployment.
+
+### μ-02 — Plan revision foundation
+- Status: IN PROGRESS; not accepted.
+- Branch / base commit: `feat/mu` / `d7b961cad`.
+- Plan reference: `docs/plan/mu-implementation-plan.md`, μ-02.
+- Scope and changed files: `packages/coding-agent/src/core/mu/plan-revision.ts` and `packages/coding-agent/test/mu-plan-revision.test.ts` add bounded canonical JSON revision content, domain-separated SHA-256 hashes and corruption/canonical-form verification. The revision is data only and is not connected to runtime controls.
+- Tests run on Linux x86_64, Node v24.21.0: `npm --workspace @earendil-works/pi-coding-agent test -- test/mu-plan-revision.test.ts` passed 4 tests; `./node_modules/.bin/biome check packages/coding-agent/src/core/mu/plan-revision.ts packages/coding-agent/test/mu-plan-revision.test.ts` passed after formatting the two task-owned files. Initial Biome check reported formatting differences, then passed.
+- Tests not run / platform gaps: full suite, standalone TypeScript build, native Windows/macOS tests and future integration tests not run.
+- Security gates affected: none verified; a hash is not approval, authorization, filesystem containment or proof of user origin.
+- Remaining blockers and next authorized step: implement and test durable content-addressed storage, active-branch session replay, bounded todos and canonical scope representations. Collision/race and corrupt-storage fixtures remain outstanding.
+- Commit / push / deployment: incremental checkpoint authorized; no deployment.
