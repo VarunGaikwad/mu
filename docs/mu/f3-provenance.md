@@ -13,7 +13,7 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 
 | Platform and mode | Evidence | Decision for μ privileged approval |
 | --- | --- | --- |
-| Linux interactive / TTY | Source inspection and isolated prototype only; real same-user child and terminal injection tests not yet run | BLOCKED |
+| Linux interactive / TTY | Isolated shared-controlling-pty `TIOCSTI` probe returned `EIO`; actual Pi TTY and alternative injection paths not verified | BLOCKED |
 | Linux RPC / headless | Isolated real Pi RPC synthetic-dialog test shows forgery when the writer and request ID are deliberately delegated; actual worker reachability and handle isolation remain untested | BLOCKED |
 | Native Windows interactive / RPC | Not tested | BLOCKED |
 | Native macOS interactive / RPC | Not tested | BLOCKED |
@@ -34,6 +34,10 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 ## Linux procfs probe
 
 On Linux `6.12.95-cloud-amd64` x86_64, Node `v24.21.0`, `npm --workspace @earendil-works/pi-coding-agent test -- test/mu-f3-linux-proc-feasibility.test.ts --silent=false` passed one isolated probe and reported `blocked:ENXIO:socket`. A disposable same-user child tried to reopen its disposable Node host's stdin via `/proc/<parent>/fd/0`; that particular descriptor was a socket and opening it for writing failed with `ENXIO`. Only fixture text was used. This does not establish protection for actual Pi RPC, anonymous pipes, terminal devices, other descriptors, platforms, `/proc` policies or alternative injection techniques. The test accepts either a recorded injection or a recorded block as an observation, not a security acceptance criterion.
+
+## Linux shared TTY probe
+
+`npm --workspace @earendil-works/pi-coding-agent test -- test/mu-f3-linux-tty-feasibility.test.ts --silent=false` created a disposable controlling pseudo-terminal in a separate Python process and forked a same-user child inheriting that pty. On this Linux host, `TIOCSTI` returned `EIO` (`blocked:EIO`). The first fixture version exited unsuccessfully; after explicitly ignoring hangup during pty cleanup, the test ran and produced the recorded result. The test accepts injection or blockage as an observation, not as an approval gate. It does not test Pi's actual interactive terminal, detached shell processes, terminal-emulator responses, other ioctls, other OS settings, or child control isolation. Python is optional; the fixture skips when unavailable.
 
 ## Required next evidence
 
