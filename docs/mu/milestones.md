@@ -6,7 +6,7 @@ The authoritative schedule and dependencies are in `docs/plan/mu-implementation-
 | --- | --- | --- |
 | μ-00 | VERIFIED-LOCAL | Baseline, architecture and test conventions recorded with focused Pi tests; user acceptance not claimed. Checkpoint pushes explicitly authorized. |
 | μ-02 | ACCEPTED | User accepted the representation slice after focused Linux tests and package typecheck. Race/crash and native-platform evidence remain absent; no approval or enforcement. |
-| μ-F3 | NOT STARTED | Independent provenance investigation; no privileged workflow verified. |
+| μ-F3 | IN PROGRESS | Host path map, isolated fail-closed prototype and synthetic shared-pipe counterexample; real channel injection and native platform evidence remain. No privileged workflow verified. |
 | Other milestones | NOT STARTED | No implementation or acceptance asserted by this ledger. |
 
 User acceptance and the plan's specified evidence are necessary before marking a milestone accepted.
