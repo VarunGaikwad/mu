@@ -5,6 +5,9 @@ export interface PathScope {
 	readonly kind: "file" | "subtree";
 	/** Canonical workspace-relative path, using forward slashes. */
 	readonly path: string;
+	/** Observed identity is a stale-target hint, never a security boundary. */
+	readonly device: string;
+	readonly inode: string;
 }
 
 function segments(path: string): string[] {
@@ -41,23 +44,34 @@ export async function createPathScope(workspace: string, kind: PathScope["kind"]
 	const root = await realpath(workspace);
 	if (!(await lstat(root)).isDirectory()) throw new Error("Workspace must be a directory");
 	let current = root;
+	let device = "";
+	let inode = "";
 	for (let i = 0; i < parts.length; i++) {
 		current = join(current, parts[i]);
-		const info = await lstat(current);
+		const info = await lstat(current, { bigint: true });
 		if (info.isSymbolicLink()) throw new Error("Symlinks are not supported in scopes");
 		if (i < parts.length - 1 && !info.isDirectory()) throw new Error("Scope ancestor is not a directory");
-		if (i === parts.length - 1 && !(kind === "file" ? info.isFile() : info.isDirectory())) {
-			throw new Error("Scope target type does not match");
+		if (i === parts.length - 1) {
+			if (!(kind === "file" ? info.isFile() : info.isDirectory()))
+				throw new Error("Scope target type does not match");
+			if (info.ino === 0n) throw new Error("Scope target identity is unavailable");
+			device = info.dev.toString();
+			inode = info.ino.toString();
 		}
 	}
-	return Object.freeze({ kind, path: parts.join("/") });
+	return Object.freeze({ kind, path: parts.join("/"), device, inode });
 }
 
-/** Recheck that a representation still names a supported target. Not race-safe or an identity check. */
+/** Recheck observed target identity. Inode reuse and races make this unsuitable for authorization. */
 export async function isPathScopeValid(workspace: string, scope: PathScope): Promise<boolean> {
 	try {
 		const checked = await createPathScope(workspace, scope.kind, scope.path);
-		return checked.kind === scope.kind && checked.path === scope.path;
+		return (
+			checked.kind === scope.kind &&
+			checked.path === scope.path &&
+			checked.device === scope.device &&
+			checked.inode === scope.inode
+		);
 	} catch {
 		return false;
 	}
