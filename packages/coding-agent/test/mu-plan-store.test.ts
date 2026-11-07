@@ -1,3 +1,4 @@
+import { constants } from "node:fs";
 import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -82,6 +83,17 @@ describe("μ plan store", () => {
 		await expect(store.save(revision)).rejects.toThrow("integrity");
 		expect(await readFile(target, "utf8")).toBe('{"broken":true}');
 		expect(await readdir(directory)).toEqual([`${revision.hash}.json`]);
+	});
+
+	it.skipIf(!constants.O_NOFOLLOW)("rejects a symlink at the stored revision filename", async () => {
+		const { store, directory, root } = await fixture();
+		const revision = createPlanRevision({ goal: "symlink" });
+		const external = join(root, "external.json");
+		await writeFile(external, JSON.stringify(revision));
+		await symlink(external, join(directory, `${revision.hash}.json`));
+		await expect(store.load(revision.hash)).rejects.toThrow();
+		await expect(store.save(revision)).rejects.toThrow();
+		expect(await readFile(external, "utf8")).toBe(JSON.stringify(revision));
 	});
 
 	it("rejects oversized files and invalid revisions", async () => {

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { constants } from "node:fs";
 import { link, lstat, open, realpath, stat, unlink } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { type PlanRevision, verifyPlanRevision } from "./plan-revision.ts";
@@ -50,7 +51,9 @@ export class PlanStore {
 
 	async load(hash: string): Promise<PlanRevision> {
 		if (!HASH_PATTERN.test(hash)) throw new Error("Invalid plan hash");
-		const file = await open(join(this.directory, `${hash}.json`), "r");
+		// Avoid blocking on special files and following the final symlink where supported.
+		const flags = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants.O_NOFOLLOW ?? 0);
+		const file = await open(join(this.directory, `${hash}.json`), flags);
 		try {
 			const metadata = await file.stat();
 			if (!metadata.isFile() || metadata.size > MAX_STORED_BYTES) throw new Error("Invalid stored plan file");
