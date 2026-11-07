@@ -56,8 +56,8 @@ Before implementing anything:
 
 **Completion rule:** No feature is considered complete merely because its code exists. Its relevant tests, security boundaries and acceptance criteria must pass.
 
-### μ-00 — Baseline audit (in progress)
-- Status: IN PROGRESS; no milestone acceptance claimed.
+### μ-00 — Baseline audit
+- Status: VERIFIED-LOCAL; no milestone acceptance claimed.
 - Branch / base commit: `feat/mu` / `3893edf14f81879e84152b099381b430ae53925a`, user-confirmed starting point. Working tree was clean before the plan baseline edit. The prior baseline differs in repository documentation and instructions; root README and CONTRIBUTING are absent at this commit.
 - Plan reference: `docs/plan/mu-implementation-plan.md`, μ-00 and section F.
 - Scope and changed files: baseline updated in the plan; this audit record and initial `docs/mu/` architecture, milestones, security gates, upstream overrides and test matrix ledgers. Session branching is available via `packages/coding-agent/src/core/session-manager.ts` (`getBranch`, `appendCustomEntry`, `branch`); tools are assembled in `packages/coding-agent/src/core/tools/index.ts`, extensions register tools through the extension API, and identity/config defaults are in `packages/coding-agent/src/config.ts`. Package configuration uses `.pi` and the `pi` executable. No μ-owned core directory was found during the audit.
@@ -66,5 +66,5 @@ Before implementing anything:
 - Further focused test on the same host: `npm --workspace @earendil-works/pi-coding-agent test -- test/session-manager/file-operations.test.ts test/session-manager/migration.test.ts test/session-manager/build-context.test.ts` passed 3 files / 53 tests. These test Pi session behavior, not μ implementation.
 - Tests not run / platform gaps: full suite and native Windows/macOS tests not run; the architecture and test inventory is not a complete security audit.
 - Security gates: unchanged and unverified; session APIs and tool visibility do not establish authorization or containment.
-- Remaining blockers and next authorized step: μ-00's plan says no changes published, while the user explicitly requested and authorized incremental pushes; checkpoints were pushed under that later instruction. μ-02 slice is outlined in `docs/mu/architecture.md`; its guarantees and tests do not yet exist. No privileged feature is enabled.
+- Remaining blockers and next authorized step: user approved updating μ-00's no-publication criterion to permit authorized checkpoint pushes. μ-02 slice is outlined in `docs/mu/architecture.md`; its guarantees and tests do not yet exist. No privileged feature is enabled.
 - Commit / push / deployment: baseline audit checkpoint authorized for commit and push; no deployment.

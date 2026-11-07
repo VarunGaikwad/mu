@@ -113,7 +113,7 @@ Track independently in `docs/mu/security-gates.md`:
 
 **Actions:** inspect `AGENTS.md`, `package.json`, Pi configuration, tool registry, extension and session APIs, the source and focused-test harness, `git status`, remotes/branch refs. Establish `docs/mu/architecture.md`, `docs/mu/milestones.md`, `docs/mu/security-gates.md`, `docs/mu/upstream-overrides.md`, and `docs/mu/test-matrix.md` only when code edits are explicitly authorized. Record baseline commit and unknowns. No assumption that earlier Phase 1a/M02/M05 files survive.
 
-**Exit:** one reproducible source snapshot; repository and test conventions recorded; first milestone self-contained; no changes published.
+**Exit:** one reproducible source snapshot; repository and test conventions recorded; first milestone self-contained. User-authorized checkpoint commits and pushes are permitted; deployment remains separately authorized.
 
 ### μ-01 — Brand and packaging
 
