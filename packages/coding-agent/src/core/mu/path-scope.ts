@@ -53,6 +53,16 @@ export async function createPathScope(workspace: string, kind: PathScope["kind"]
 	return Object.freeze({ kind, path: parts.join("/") });
 }
 
+/** Recheck that a representation still names a supported target. Not race-safe or an identity check. */
+export async function isPathScopeValid(workspace: string, scope: PathScope): Promise<boolean> {
+	try {
+		const checked = await createPathScope(workspace, scope.kind, scope.path);
+		return checked.kind === scope.kind && checked.path === scope.path;
+	} catch {
+		return false;
+	}
+}
+
 /** Lexical membership only; callers must not use this as authorization or a mutation guard. */
 export function pathInScope(scope: PathScope, candidate: string): boolean {
 	try {

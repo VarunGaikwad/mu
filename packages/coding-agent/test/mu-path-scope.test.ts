@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createPathScope, pathInScope } from "../src/core/mu/path-scope.ts";
+import { createPathScope, isPathScopeValid, pathInScope } from "../src/core/mu/path-scope.ts";
 
 const roots: string[] = [];
 async function fixture() {
@@ -43,6 +43,16 @@ describe("μ path scope representation", () => {
 		]) {
 			await expect(createPathScope(root, "file", value)).rejects.toThrow();
 		}
+	});
+
+	it("reports a previously valid scope as invalid after deletion or symlink substitution", async () => {
+		const root = await fixture();
+		const scope = await createPathScope(root, "file", "src/file.ts");
+		expect(await isPathScopeValid(root, scope)).toBe(true);
+		await rm(join(root, "src", "file.ts"));
+		expect(await isPathScopeValid(root, scope)).toBe(false);
+		await symlink(join(root, "src"), join(root, "src", "file.ts"), "dir");
+		expect(await isPathScopeValid(root, scope)).toBe(false);
 	});
 
 	it("rejects missing paths, wrong types and symlink targets and ancestors", async () => {
