@@ -14,7 +14,7 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 | Platform and mode | Evidence | Decision for μ privileged approval |
 | --- | --- | --- |
 | Linux interactive / TTY | Source inspection and isolated prototype only; real same-user child and terminal injection tests not yet run | BLOCKED |
-| Linux RPC / headless | Source inspection, isolated prototype and mocked RPC extension-dispatch test; real channel forgery and handle-isolation tests not yet run | BLOCKED |
+| Linux RPC / headless | Source inspection, mocked RPC dispatch and an isolated Node-host procfs probe; real Pi channel forgery and handle-isolation tests not yet run | BLOCKED |
 | Native Windows interactive / RPC | Not tested | BLOCKED |
 | Native macOS interactive / RPC | Not tested | BLOCKED |
 | WSL2 interactive / RPC | Not tested | BLOCKED |
@@ -26,6 +26,10 @@ Status: IN PROGRESS. This document is a threat map and a record of observed evid
 ## Local shared-channel counterexample
 
 `packages/coding-agent/test/mu-f3-rpc-feasibility.test.ts` starts a same-user Node child with an intentionally delegated private test pipe. The child emits two identical responses bearing a public fixture ID; a toy ID-only receiver accepts the first and rejects the replay. This demonstrates that replay protection alone cannot authenticate the writer when the writer handle is shared. It does **not** establish that a Pi child actually inherits or can reach the real RPC channel; the test never touches a real approval, terminal or RPC session. The ID is synthetic and not a secret.
+
+## Linux procfs probe
+
+On Linux `6.12.95-cloud-amd64` x86_64, Node `v24.21.0`, `npm --workspace @earendil-works/pi-coding-agent test -- test/mu-f3-linux-proc-feasibility.test.ts --silent=false` passed one isolated probe and reported `blocked:ENXIO:socket`. A disposable same-user child tried to reopen its disposable Node host's stdin via `/proc/<parent>/fd/0`; that particular descriptor was a socket and opening it for writing failed with `ENXIO`. Only fixture text was used. This does not establish protection for actual Pi RPC, anonymous pipes, terminal devices, other descriptors, platforms, `/proc` policies or alternative injection techniques. The test accepts either a recorded injection or a recorded block as an observation, not a security acceptance criterion.
 
 ## Required next evidence
 
