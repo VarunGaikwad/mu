@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { link, open, realpath, stat, unlink } from "node:fs/promises";
-import { isAbsolute, join, relative, sep } from "node:path";
+import { link, lstat, open, realpath, stat, unlink } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { type PlanRevision, verifyPlanRevision } from "./plan-revision.ts";
 
 const MAX_STORED_BYTES = 3 * 1024 * 1024;
@@ -9,6 +9,23 @@ const HASH_PATTERN = /^[a-f0-9]{64}$/;
 function inside(parent: string, child: string): boolean {
 	const path = relative(parent, child);
 	return path === "" || (!isAbsolute(path) && path !== ".." && !path.startsWith(`..${sep}`));
+}
+
+async function rejectRepositoryStorage(directory: string, workspace: string): Promise<void> {
+	let current = workspace;
+	while (true) {
+		let markerExists = false;
+		try {
+			await lstat(join(current, ".git"));
+			markerExists = true;
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+		}
+		if (markerExists && inside(current, directory)) throw new Error("Plan store must be outside repository");
+		const parent = dirname(current);
+		if (parent === current) return;
+		current = parent;
+	}
 }
 
 /** Content storage only: not a filesystem containment or authorization boundary. */
@@ -27,6 +44,7 @@ export class PlanStore {
 			throw new Error("Store and workspace must be directories");
 		}
 		if (inside(workspacePath, storePath)) throw new Error("Plan store must be outside workspace");
+		await rejectRepositoryStorage(storePath, workspacePath);
 		return new PlanStore(storePath);
 	}
 

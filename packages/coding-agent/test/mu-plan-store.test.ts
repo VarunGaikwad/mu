@@ -92,6 +92,18 @@ describe("μ plan store", () => {
 		await expect(store.save({ ...revision, hash: "0".repeat(64) })).rejects.toThrow("Invalid plan revision");
 	});
 
+	it("rejects a store within an enclosing repository when the workspace is nested", async () => {
+		const { root, workspace, directory } = await fixture();
+		await mkdir(join(root, ".git"));
+		await expect(PlanStore.open(directory, workspace)).rejects.toThrow("outside repository");
+	});
+
+	it("rejects worktree-style repository markers as well as directories", async () => {
+		const { root, workspace, directory } = await fixture();
+		await writeFile(join(root, ".git"), "gitdir: elsewhere");
+		await expect(PlanStore.open(directory, workspace)).rejects.toThrow("outside repository");
+	});
+
 	it("rejects invalid hashes and store directories inside the workspace", async () => {
 		const { workspace, store } = await fixture();
 		await expect(store.load("../outside")).rejects.toThrow("Invalid plan hash");
