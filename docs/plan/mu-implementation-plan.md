@@ -6,7 +6,7 @@
 **Status:** PROPOSED / NEW START — no μ implementation has been accepted  
 **Starting repository:** `/home/user/projects/mu`  
 **Development branch:** `feat/mu`  
-**Observed starting commit:** `085c84e98e7f4c950f2be606466fff4f75d8fe7c`  
+**Current starting commit:** `3893edf14f81879e84152b099381b430ae53925a` (user-confirmed; previous observed baseline: `085c84e98e7f4c950f2be606466fff4f75d8fe7c`)
 **Git remotes:** `origin = https://github.com/VarunGaikwad/mu.git`, `upstream = https://github.com/earendil-works/pi.git`
 
 > This is a new implementation, **not** a continuation of previously reported M02/M05 or Phase 1–3 work. All earlier claims of completed μ features and test evidence are historical. Confirm the current repository state before each milestone. Nothing in this plan grants execution permission, proves security, or authorizes Git writes.
@@ -264,7 +264,7 @@ Verification minimum: focused unit and faux-provider tests; run each added/chang
 
 ## F. First coding-agent assignment — μ-00 then μ-02
 
-> **You are implementing μ, a new coding agent fork of Pi. The visible name is the Greek letter `μ`; portable source and CLI identifiers use `mu`. Start at `/home/user/projects/mu`, branch `feat/mu`, expected baseline `085c84e98e7f4c950f2be606466fff4f75d8fe7c`. All previously reported μ feature work is gone; do not claim any prior implementation completed.**
+> **You are implementing μ, a new coding agent fork of Pi. The visible name is the Greek letter `μ`; portable source and CLI identifiers use `mu`. Start at `/home/user/projects/mu`, branch `feat/mu`, current starting baseline `3893edf14f81879e84152b099381b430ae53925a`. All previously reported μ feature work is gone; do not claim any prior implementation completed.**
 >
 > 
 > 1. Perform **read-only μ-00 reconnaissance**: confirm branch, HEAD, complete dirty state, `AGENTS.md`, runtime session/tool/config APIs, test patterns and target path availability. Report any discrepancy before editing. Do not fetch or alter branches.

@@ -55,3 +55,14 @@ Before implementing anything:
 **First product milestone:** A working μ interface where a user creates an execution-ready plan, reviews its exact scope, approves it and starts Code Mode securely.
 
 **Completion rule:** No feature is considered complete merely because its code exists. Its relevant tests, security boundaries and acceptance criteria must pass.
+
+### μ-00 — Baseline audit (in progress)
+- Status: IN PROGRESS; no milestone acceptance claimed.
+- Branch / base commit: `feat/mu` / `3893edf14f81879e84152b099381b430ae53925a`, user-confirmed starting point. Working tree was clean before the plan baseline edit. The prior baseline differs in repository documentation and instructions; root README and CONTRIBUTING are absent at this commit.
+- Plan reference: `docs/plan/mu-implementation-plan.md`, μ-00 and section F.
+- Scope and changed files: baseline updated in the plan; this audit record. Session branching is available via `packages/coding-agent/src/core/session-manager.ts` (`getBranch`, `appendCustomEntry`, `branch`); tools are assembled in `packages/coding-agent/src/core/tools/index.ts`, extensions register tools through the extension API, and identity/config defaults are in `packages/coding-agent/src/config.ts`. Package configuration uses `.pi` and the `pi` executable. No μ-owned core directory was found during the audit.
+- Tests run on Linux x86_64, Node v24.21.0: `npm --workspace @earendil-works/pi-coding-agent test -- test/session-manager/build-context.test.ts` initially failed during import because `@earendil-works/pi-schema` had not been built; `npm --workspace @earendil-works/pi-schema run build` succeeded, and the same focused test command then passed 16 tests. Schema build generated local build artifacts.
+- Tests not run / platform gaps: full suite and native Windows/macOS tests not run; audit and test map are incomplete.
+- Security gates: unchanged and unverified; session APIs and tool visibility do not establish authorization or containment.
+- Remaining blockers and next authorized step: complete μ-00 architecture, milestone, security, override and test ledgers before considering μ-02. No privileged feature is enabled.
+- Commit / push / deployment: baseline audit checkpoint authorized for commit and push; no deployment.
