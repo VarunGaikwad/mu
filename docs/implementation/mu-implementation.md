@@ -70,7 +70,7 @@ Before implementing anything:
 - Commit / push / deployment: baseline audit checkpoint authorized for commit and push; no deployment.
 
 ### μ-02 — Plan revision foundation
-- Status: IN PROGRESS; not accepted.
+- Status: VERIFIED-LOCAL for the representation slice; not accepted and not a security boundary.
 - Branch / base commit: `feat/mu` / `d7b961cad`.
 - Plan reference: `docs/plan/mu-implementation-plan.md`, μ-02.
 - Scope and changed files: `packages/coding-agent/src/core/mu/plan-revision.ts` and `packages/coding-agent/test/mu-plan-revision.test.ts` add bounded canonical JSON revision content, domain-separated SHA-256 hashes and corruption/canonical-form verification. The revision is data only and is not connected to runtime controls.
@@ -89,5 +89,6 @@ Before implementing anything:
 - Stale-scope follow-up: `PathScope` now records the observed target device/inode as decimal strings, rejects unavailable inode identity and rechecks it. A Linux test detects same-kind replacement while preserving the old inode; JSON round-trip and missing/tampered identity are covered. This supersedes the earlier note that no identity check existed. Inode reuse, hard links, ancestor swaps, content changes and check/use races remain unprotected; identity is a hint, not a mutation boundary. Targeted Biome and package typecheck passed; the five μ focused test files passed 29 tests on Linux using the command above.
 - Store-location follow-up: `PlanStore.open` now checks `.git` file/directory markers on workspace ancestors and rejects a store inside an enclosing repository, including when the workspace is a nested directory. Targeted fixtures cover normal and worktree-style markers. This discovery is not a security boundary and does not prove detection of all repository layouts or resist marker races. Targeted Biome and package typecheck passed; the five μ test files passed 31 tests on Linux.
 - Store read hardening: opens use `O_NONBLOCK` and `O_NOFOLLOW` where the platform exposes them; a Linux fixture verifies rejection of a final symlink without modifying its target. `npm --workspace @earendil-works/pi-coding-agent test -- test/mu-plan-store.test.ts` passed 11 tests; targeted Biome and package typecheck passed. Flag availability and semantics on native Windows/macOS remain unverified; this does not protect parent paths or make the store a security boundary.
-- Remaining blockers and next authorized step: strengthen crash and hostile filesystem-race evidence and native-platform behavior, especially device/inode availability. No production authorization or containment is claimed.
+- Local gate review: final targeted Biome check across the five μ modules and tests passed; `./node_modules/.bin/tsc --noEmit -p packages/coding-agent/tsconfig.build.json` passed; the five focused μ test files passed 32 tests on Linux. `git diff --check d7b961cad..HEAD` passed. Scope representations, branch replay and storage remain disconnected from privileged runtime transitions.
+- Remaining blockers and next authorized step: user acceptance is required at the μ-02 acceptance gate. Crash and hostile filesystem-race behavior, native Windows/macOS and device/inode availability remain unverified. No production authorization or containment is claimed.
 - Commit / push / deployment: incremental checkpoint authorized; no deployment.
