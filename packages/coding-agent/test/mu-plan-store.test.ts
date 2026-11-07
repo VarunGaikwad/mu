@@ -28,12 +28,49 @@ describe("μ plan store", () => {
 		expect(Object.isFrozen(await store.load(revision.hash))).toBe(true);
 	});
 
+	it("snapshots a revision before asynchronous publication", async () => {
+		const { store } = await fixture();
+		const original = createPlanRevision({ goal: "original" });
+		const mutable = { ...original };
+		const saving = store.save(mutable);
+		mutable.hash = "0".repeat(64);
+		mutable.content = "null";
+		await saving;
+		expect(await store.load(original.hash)).toEqual(original);
+	});
+
 	it("publishes concurrent identical revisions without partial files or overwrites", async () => {
 		const { store, directory } = await fixture();
 		const revision = createPlanRevision({ goal: "same" });
 		await Promise.all(Array.from({ length: 12 }, () => store.save(revision)));
 		expect(await store.load(revision.hash)).toEqual(revision);
 		expect(await readdir(directory)).toEqual([`${revision.hash}.json`]);
+	});
+
+	it("never exposes partial revisions to concurrent readers", async () => {
+		const { store } = await fixture();
+		const revision = createPlanRevision({ data: "x".repeat(100_000) });
+		const writer = store.save(revision);
+		const readers = Array.from({ length: 30 }, async () => {
+			try {
+				expect(await store.load(revision.hash)).toEqual(revision);
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+			}
+		});
+		await Promise.all([writer, ...readers]);
+		expect(await store.load(revision.hash)).toEqual(revision);
+	});
+
+	it("rejects a valid different revision under a colliding target name", async () => {
+		const { store, directory } = await fixture();
+		const expected = createPlanRevision({ goal: "first" });
+		const different = createPlanRevision({ goal: "different" });
+		const target = join(directory, `${expected.hash}.json`);
+		const original = JSON.stringify(different);
+		await writeFile(target, original);
+		await expect(store.save(expected)).rejects.toThrow("integrity");
+		expect(await readFile(target, "utf8")).toBe(original);
 	});
 
 	it("rejects corruption and never replaces an existing target", async () => {
